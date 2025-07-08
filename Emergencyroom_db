@@ -1,0 +1,96 @@
+CREATE DATABASE EmergencyRoomDB;
+USE EmergencyRoomDB;
+
+
+-- 1. Person table:Stores all people (patients and workers)
+CREATE TABLE person (
+    person_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50),
+    middle_name VARCHAR(50),
+    last_name VARCHAR(50)
+);
+
+-- 2. Address table:Stores addresses for people
+CREATE TABLE address (
+    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    person_id INT,
+    country VARCHAR(50),
+    province VARCHAR(50),
+    city VARCHAR(50),
+    street VARCHAR(100),
+    street_number VARCHAR(20),
+    FOREIGN KEY (person_id) REFERENCES person(person_id)
+);
+
+-- 3. Worker table:Stores worker roles
+CREATE TABLE worker (
+    worker_id INT AUTO_INCREMENT PRIMARY KEY,
+    person_id INT,
+    role ENUM('receptionist', 'nurse', 'doctor'),
+    FOREIGN KEY (person_id) REFERENCES person(person_id)
+);
+
+-- 4. Shift table:Stores shift information and each shift has a start/end time and a triage doctor.
+CREATE TABLE shift (
+    shift_id INT AUTO_INCREMENT PRIMARY KEY,
+    start_time DATETIME,
+    end_time DATETIME
+);
+
+-- 5. Shift Assignment table:Each shift has a start/end time and a triage doctor.
+CREATE TABLE shift_assignment (
+    shift_id INT,
+    worker_id INT,
+    is_triage_doctor BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (shift_id, worker_id),
+    FOREIGN KEY (shift_id) REFERENCES shift(shift_id),
+    FOREIGN KEY (worker_id) REFERENCES worker(worker_id)
+);
+
+-- 6. Patient table: Stores patients
+CREATE TABLE patient (
+    patient_id INT AUTO_INCREMENT PRIMARY KEY,
+    person_id INT,
+    FOREIGN KEY (person_id) REFERENCES person(person_id)
+);
+
+-- 7. PatientAdmission table: records patient admissions
+CREATE TABLE patient_admission (
+  admission_id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT NOT NULL,
+  shift_id INT NOT NULL,
+  admitted_by_worker_id INT NOT NULL,  -- receptionist
+  triage_doctor_id INT NOT NULL,
+  admission_time DATETIME NOT NULL,
+  discharge_time DATETIME,  -- nullable, may not be known at admission
+  status ENUM('sent_home', 'prescribed_medication', 'admitted') NOT NULL,
+  FOREIGN KEY (patient_id) REFERENCES patient(patient_id),
+  FOREIGN KEY (shift_id) REFERENCES shift(shift_id),
+  FOREIGN KEY (admitted_by_worker_id) REFERENCES worker(worker_id),
+  FOREIGN KEY (triage_doctor_id) REFERENCES worker(worker_id)
+);
+
+-- 8. Medication
+CREATE TABLE medication (
+    medication_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+-- 9. Patient Medication
+CREATE TABLE patient_medication (
+    patient_medication_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    medication_id INT,
+    prescribed_by_doctor_id INT,
+    administered_by_nurse_id INT,
+    shift_id INT,
+    dosage VARCHAR(50),
+    times_per_day INT,
+    start_date DATE,
+    end_date DATE,
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id),
+    FOREIGN KEY (medication_id) REFERENCES medication(medication_id),
+    FOREIGN KEY (prescribed_by_doctor_id) REFERENCES worker(worker_id),
+    FOREIGN KEY (administered_by_nurse_id) REFERENCES worker(worker_id),
+    FOREIGN KEY (shift_id) REFERENCES shift(shift_id)
+);
